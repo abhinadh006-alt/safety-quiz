@@ -16,11 +16,15 @@ export default async function webhookHandler(req, res) {
         const chatId = req.body?.message?.chat?.id;
 
         // Basic guard: require bot token in env
+        // at top of file
+        const DISABLE_TELEGRAM = (process.env.DISABLE_TELEGRAM === 'true');
+        // later where you check BOT token:
         const BOT = process.env.TELEGRAM_BOT_TOKEN;
-        if (!BOT) {
+        if (!BOT && !DISABLE_TELEGRAM) {
             console.error("TELEGRAM_BOT_TOKEN not set in env");
             return res.status(500).json({ ok: false, error: "Missing bot token" });
         }
+
 
         // Only respond to /start for now
         if (text && text.trim() === "/start" && chatId) {

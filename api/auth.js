@@ -45,9 +45,21 @@ export default async function handler(req, res) {
 
         const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
         // Important: Secure required in production (HTTPS). SameSite Lax to allow link navigation.
-        const cookie = `token=${sessionToken}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure`;
+        const cookieParts = [
+            `token=${sessionToken}`,
+            "HttpOnly",
+            "Path=/",
+            `Max-Age=${maxAge}`,
+            "SameSite=Lax",
+            "Domain=localhost"
+        ];
 
-        res.setHeader("Set-Cookie", cookie);
+        if (process.env.NODE_ENV === "production") {
+            cookieParts.push("Secure");
+        }
+
+        res.setHeader("Set-Cookie", cookieParts.join("; "));
+
 
         // Redirect to the app area
         const redirectTo = `${APP_URL}/app`;

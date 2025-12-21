@@ -1,0 +1,8 @@
+// inside
+<script> devLogin()
+    const data = await res.json();
+    if (res.ok) {
+        if (data.username) localStorage.setItem('username', data.username);
+        alert('Dev login success — token issued');
+        window.location.href = '/quiz';
+    }
