@@ -1,62 +1,36 @@
-// api/levels.js
+// server/api/levels.js
 import { createClient } from "@supabase/supabase-js";
-import jwt from "jsonwebtoken";
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+);
 
 export default async function handler(req, res) {
     try {
-        /* ---------------------------
-           AUTH (Layer 4 – Cookie JWT)
-        ---------------------------- */
-        const cookie = req.headers.cookie || "";
-        const match = cookie.match(/token=([^;]+)/);
+        const { category_id } = req.query;
 
-        if (!match) {
-            return res.status(401).json({
-                ok: false,
-                error: "Not authenticated"
+        if (!category_id) {
+            return res.status(400).json({
+                error: "category_id is required"
             });
         }
-
-        try {
-            jwt.verify(match[1], process.env.JWT_SECRET);
-        } catch {
-            return res.status(401).json({
-                ok: false,
-                error: "Invalid session"
-            });
-        }
-
-        /* ---------------------------
-           SUPABASE QUERY
-        ---------------------------- */
-        const supabase = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_KEY
-        );
 
         const { data, error } = await supabase
             .from("levels")
             .select("id, name")
+            .eq("category_id", Number(category_id))
             .order("id", { ascending: true });
 
-        if (error) {
-            console.error("Supabase levels error:", error);
-            return res.status(500).json({
-                ok: false,
-                error: "Database error"
-            });
-        }
+        if (error) throw error;
 
-        return res.json({
-            ok: true,
-            levels: data
-        });
+        // ✅ Return array directly (same pattern as categories)
+        return res.status(200).json(data);
 
     } catch (err) {
-        console.error("levels api fatal error:", err);
+        console.error("levels api error:", err);
         return res.status(500).json({
-            ok: false,
-            error: "Server error"
+            error: err.message || "Server error"
         });
     }
 }

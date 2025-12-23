@@ -21,13 +21,13 @@ export default function SelectLevel() {
         async function load() {
             setLoading(true);
             try {
-                const res = await fetch("/api/levels", {
-                    credentials: "include"
-                });
+                const res = await fetch(`/api/levels?category_id=${category_id}`);
+
 
                 const json = await res.json();
-                if (!res.ok || !json.ok) throw new Error(json?.error || "Failed to load levels");
-                if (mounted) setLevels(json.levels || []);
+                if (!res.ok) throw new Error("Failed to load levels");
+                setLevels(Array.isArray(json) ? json : []);
+
             } catch (err) {
                 console.error("load levels:", err);
                 if (mounted) setLevels([]);
