@@ -5,9 +5,9 @@ import cors from "cors";
 import fetch from "node-fetch";
 import jwt from "jsonwebtoken";
 
-import questionsHandler from "./api/questions.js";
-import submitResultRouter from "./api/submit-result.js";
-import getResultHandler from "./api/result.js";
+import questionsHandler from "./server/api/questions.js";
+import submitResultRouter from "./server/api/submit-result.js";
+import getResultHandler from "./server/api/result.js";
 
 dotenv.config();
 
@@ -90,6 +90,4 @@ if (submitResultRouter) {
 }
 
 /* ---------- START SERVER ---------- */
-app.listen(PORT, () =>
-    console.log(`Backend running at http://localhost:${PORT}`)
-);
+export default app;
