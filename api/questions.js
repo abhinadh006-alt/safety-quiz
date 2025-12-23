@@ -8,15 +8,29 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
     try {
-        const { category_id, level_id, limit = 100 } = req.query;
+        const { category_id, level_number, limit = 100 } = req.query;
 
-        if (!category_id || !level_id) {
+        if (!category_id || !level_number) {
             return res.status(400).json({
-                error: "category_id and level_id are required"
+                error: "category_id and level_number are required"
             });
         }
 
-        const { data, error } = await supabase
+        // 🔑 Resolve level_id from level_number
+        const { data: level, error: levelError } = await supabase
+            .from("levels")
+            .select("id")
+            .eq("category_id", category_id)
+            .eq("level_number", level_number)
+            .single();
+
+        if (levelError || !level) {
+            return res.status(404).json({
+                error: "Invalid level for category"
+            });
+        }
+
+        const { data: questions, error } = await supabase
             .from("questions")
             .select(`
         id,
@@ -26,19 +40,15 @@ export default async function handler(req, res) {
         explanation
       `)
             .eq("category_id", category_id)
-            .eq("level_id", level_id)
+            .eq("level_id", level.id)
             .limit(Number(limit));
 
         if (error) throw error;
 
-        return res.json({
-            questions: data
-        });
+        return res.json({ questions });
 
     } catch (err) {
         console.error("questions api error:", err);
-        return res.status(500).json({
-            error: err.message
-        });
+        return res.status(500).json({ error: err.message });
     }
 }
