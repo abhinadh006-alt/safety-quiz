@@ -13,15 +13,17 @@ export default function SelectCategory() {
         async function load() {
             setLoading(true);
             try {
-                const res = await fetch("/api/categories", {
-                    credentials: "include"
-                });
+                const res = await fetch("/api/categories");
 
                 const json = await res.json();
-                if (!res.ok || !json.ok) {
+
+                if (!res.ok) {
                     throw new Error(json?.error || "Failed to load categories");
                 }
-                if (mounted) setCategories(json.categories || []);
+
+                // API returns array directly
+                if (mounted) setCategories(Array.isArray(json) ? json : []);
+
             } catch (err) {
                 console.error("load categories:", err);
                 if (mounted) setCategories([]);
