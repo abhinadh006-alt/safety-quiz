@@ -1,26 +1,37 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-);
-
 export default async function handler(req, res) {
-    if (req.method !== "GET") {
-        return res.status(405).json({ error: "Method Not Allowed" });
-    }
-
     try {
+        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+            return res.status(500).json({
+                ok: false,
+                error: "Supabase env vars missing"
+            });
+        }
+
+        const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_KEY
+        );
+
         const { data, error } = await supabase
             .from("categories")
-            .select("*")
+            .select("id, name")
             .order("id");
 
         if (error) throw error;
 
-        res.setHeader("Cache-Control", "no-store");
-        res.status(200).json(data);
+        // ✅ IMPORTANT: wrap in object
+        return res.status(200).json({
+            ok: true,
+            categories: data
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("categories api error:", err);
+        return res.status(500).json({
+            ok: false,
+            error: err.message
+        });
     }
 }

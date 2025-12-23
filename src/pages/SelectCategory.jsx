@@ -22,7 +22,11 @@ export default function SelectCategory() {
                 }
 
                 // API returns array directly
-                if (mounted) setCategories(Array.isArray(json) ? json : []);
+                // API returns { ok, categories }
+                if (mounted) {
+                    setCategories(Array.isArray(json.categories) ? json.categories : []);
+                }
+
 
             } catch (err) {
                 console.error("load categories:", err);
