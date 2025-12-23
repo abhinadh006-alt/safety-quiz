@@ -19,9 +19,10 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabase
             .from("levels")
-            .select("id, name")
+            .select("id, name, level_number")
             .eq("category_id", category_id)
-            .order("id", { ascending: true });
+            .order("level_number", { ascending: true });
+
 
         if (error) throw error;
 

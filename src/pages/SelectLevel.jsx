@@ -50,7 +50,7 @@ export default function SelectLevel() {
     function start(level) {
         const params = new URLSearchParams({
             category_id: String(category_id),
-            level_id: String(level.id)
+            level_number: String(level.level_number)
         });
         navigate(`/quiz?${params.toString()}`);
     }
