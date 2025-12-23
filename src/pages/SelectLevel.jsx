@@ -43,10 +43,9 @@ export default function SelectLevel() {
         }
 
         load();
-        return () => {
-            mounted = false;
-        };
+        return () => (mounted = false);
     }, [category_id]);
+
 
     function start(level) {
         const params = new URLSearchParams({
