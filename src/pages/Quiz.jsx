@@ -28,6 +28,12 @@ export default function Quiz() {
         }
     }
 
+    function vibrate(pattern) {
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+            navigator.vibrate(pattern);
+        }
+    }
+
     // read query params (category_id and level_id) to fetch filtered questions
     function getQsParams() {
         const q = new URLSearchParams(location.search);
@@ -214,31 +220,57 @@ export default function Quiz() {
 
     async function submitResultToSupabase(username, scoreVal, total) {
         try {
-            const payload = { username: username || 'guest', score: Number(scoreVal), total: Number(total) };
-            const res = await fetch('/api/submit-result', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const score = Number(scoreVal);
+            const totalQ = Number(total);
+            const percentage = Math.round((score / totalQ) * 100);
+            const result = percentage >= 60 ? "PASS" : "FAIL";
+
+            const payload = {
+                username: username || "guest",
+                score,
+                total: totalQ,
+                percentage,
+                result
+            };
+
+            const res = await fetch("/api/submit-result", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
+
             if (!res.ok) {
-                const txt = await res.text().catch(() => '');
-                console.error('submit-result failed', res.status, txt);
+                const txt = await res.text().catch(() => "");
+                console.error("submit-result failed", res.status, txt);
                 return { ok: false, error: txt || `HTTP ${res.status}` };
             }
+
             const json = await res.json();
-            return { ok: true, id: json.id || (json.row && json.row.id) };
+
+            return {
+                ok: true,
+                certificateId: json.id || (json.row && json.row.id)
+            };
+
         } catch (err) {
-            console.error('submitResultToSupabase error', err);
+            console.error("submitResultToSupabase error", err);
             return { ok: false, error: err.message || String(err) };
         }
     }
+
 
     async function next() {
         if (selected == null) return;
         const q = questions[index];
 
         if (!revealed) {
-            if (q && selected === q.answer) setScore(s => s + 1);
+            if (q && selected === q.answer) {
+                setScore(s => s + 1);
+                vibrate(40);              // ✅ correct answer haptic
+            } else {
+                vibrate([20, 30, 20]);    // ✅ wrong answer haptic
+            }
+
             setRevealed(true);
             return;
         }
@@ -249,21 +281,27 @@ export default function Quiz() {
         // move to next question
         if (index + 1 >= questions.length) {
             setFinished(true);
-            let username = localStorage.getItem('username') || 'guest';
+
+            let username = localStorage.getItem("username") || "guest";
             const resultResp = await submitResultToSupabase(username, score, questions.length);
-            if (resultResp && resultResp.ok && resultResp.id) {
-                navigate(`/certificate?id=${encodeURIComponent(resultResp.id)}`);
-            } else {
-                navigate(`/certificate?score=${score}&total=${questions.length}&username=${encodeURIComponent(username)}`);
-            }
+
+            const certificateId = resultResp?.certificateId || "local";
+
+            navigate(
+                `/certificate` +
+                `?score=${score}` +
+                `&total=${questions.length}` +
+                `&username=${encodeURIComponent(username)}`
+            );
+
+
             return;
         }
 
         setIndex(i => {
             const nextIndex = i + 1;
-            // focus first option of next question (after small delay to allow render)
             setTimeout(() => {
-                if (firstOptionRef.current && typeof firstOptionRef.current.focus === 'function') {
+                if (firstOptionRef.current?.focus) {
                     firstOptionRef.current.focus();
                 }
             }, 40);
@@ -277,65 +315,147 @@ export default function Quiz() {
     const q = questions[index];
 
     return (
-        <div className="max-w-3xl mx-auto p-8">
+        <div className="max-w-3xl mx-auto p-6">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={q.id || index}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.28 }}
-                    className="bg-white p-6 rounded shadow"
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="bg-white rounded-xl shadow-sm border"
                 >
-                    <div className="text-sm text-gray-500 mb-3">Question {index + 1} / {questions.length}</div>
-                    <h3 className="text-xl font-semibold mb-6 text-gray-900">{q.title}</h3>
-
-                    <div className="space-y-3" role="list">
-                        {q.options.map((opt, i) => {
-                            const isSelected = selected === i;
-                            const isCorrect = q.answer === i;
-                            let classes = 'block w-full text-left p-4 rounded border transition-colors focus:outline-none';
-                            if (!revealed) {
-                                classes += isSelected
-                                    ? ' bg-brand-500 text-white border-brand-500'
-                                    : ' bg-gray-50 text-gray-900 hover:bg-gray-100';
-                            } else {
-                                if (isCorrect) {
-                                    classes += ' bg-green-100 text-green-800 border-green-200';
-                                } else if (isSelected && !isCorrect) {
-                                    classes += ' bg-red-100 text-red-800 border-red-200';
-                                } else {
-                                    classes += ' bg-gray-50 text-gray-900';
-                                }
-                            }
-
-                            // attach ref to first option for focus management
-                            const btnRef = (i === 0) ? firstOptionRef : null;
-
-                            return (
-                                <button
-                                    key={`${q.id ?? index}-${i}`}
-                                    ref={btnRef}
-                                    onClick={() => chooseOption(i)}
-                                    className={classes}
-                                    disabled={revealed}
-                                    aria-pressed={isSelected}
-                                    aria-label={`Option ${i + 1}`}
-                                >
-                                    {opt}
-                                </button>
-                            );
-                        })}
+                    {/* PROGRESS BAR */}
+                    <div className="h-2 w-full bg-gray-100 rounded-t-xl overflow-hidden">
+                        <div
+                            className="h-full bg-brand-500 transition-all duration-300"
+                            style={{
+                                width: `${((index + 1) / questions.length) * 100}%`
+                            }}
+                        />
                     </div>
 
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={next}
-                            className="px-4 py-2 rounded bg-brand-500 text-white disabled:opacity-60"
-                            disabled={selected == null}
-                        >
-                            {!revealed ? (index + 1 >= questions.length ? 'Finish (reveal)' : 'Next (reveal)') : (index + 1 >= questions.length ? 'Finish' : 'Continue')}
-                        </button>
+                    <div className="p-6">
+                        {/* QUESTION META */}
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="text-sm text-gray-500">
+                                Question {index + 1} of {questions.length}
+                            </div>
+                            <div className="text-sm font-medium text-gray-600">
+                                Score: {score}
+                            </div>
+                        </div>
+
+                        {/* QUESTION */}
+                        <h3 className="text-xl font-semibold text-gray-900 mb-6 leading-snug">
+                            {q.title}
+                        </h3>
+
+                        {/* OPTIONS */}
+                        <div className="space-y-3">
+                            {q.options.map((opt, i) => {
+                                const isSelected = selected === i;
+                                const isCorrect = q.answer === i;
+
+                                let classes =
+                                    "block w-full text-left px-5 py-4 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-brand-500";
+
+                                if (!revealed) {
+                                    classes += isSelected
+                                        ? " bg-brand-500 text-white border-brand-500"
+                                        : " bg-gray-50 hover:bg-gray-100";
+                                } else {
+                                    if (isCorrect) {
+                                        classes +=
+                                            " bg-green-50 text-green-800 border-green-300";
+                                    } else if (isSelected) {
+                                        classes +=
+                                            " bg-red-50 text-red-800 border-red-300";
+                                    } else {
+                                        classes += " bg-gray-50";
+                                    }
+                                }
+
+                                return (
+                                    <button
+                                        key={`${q.id ?? index}-${i}`}
+                                        ref={i === 0 ? firstOptionRef : null}
+                                        onClick={() => {
+                                            vibrate(10);       // light tap feedback
+                                            chooseOption(i);
+                                        }}
+                                        disabled={revealed}
+                                        className={`
+    w-full text-left px-5 py-4 rounded-lg border transition-all
+    active:scale-[0.98]
+
+    ${!revealed
+                                                ? selected === i
+                                                    ? "border-brand-500 bg-brand-50"
+                                                    : "border-gray-200 bg-white hover:bg-gray-50"
+                                                : i === q.answer
+                                                    ? "border-green-500 bg-green-50 text-green-800"
+                                                    : selected === i
+                                                        ? "border-red-500 bg-red-50 text-red-800"
+                                                        : "border-gray-200 bg-gray-50"
+                                            }
+  `}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {/* Radio indicator */}
+                                            <span
+                                                className={`
+        h-4 w-4 rounded-full border flex-shrink-0
+        ${!revealed
+                                                        ? selected === i
+                                                            ? "bg-brand-500 border-brand-500"
+                                                            : "border-gray-300"
+                                                        : i === q.answer
+                                                            ? "bg-green-500 border-green-500"
+                                                            : selected === i
+                                                                ? "bg-red-500 border-red-500"
+                                                                : "border-gray-300"
+                                                    }
+      `}
+                                            />
+
+                                            {/* Option text */}
+                                            <span className="font-medium">{opt}</span>
+                                        </div>
+                                    </button>
+
+                                );
+                            })}
+                        </div>
+
+                        {/* EXPLANATION */}
+                        {revealed && q.explanation && (
+                            <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                                <div className="font-semibold text-blue-900 mb-1">
+                                    Explanation
+                                </div>
+                                <p className="text-blue-800 text-sm leading-relaxed">
+                                    {q.explanation}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* ACTION */}
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={next}
+                                disabled={selected == null}
+                                className="px-6 py-2.5 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 disabled:opacity-50"
+                            >
+                                {!revealed
+                                    ? index + 1 >= questions.length
+                                        ? "Finish"
+                                        : "Reveal Answer"
+                                    : index + 1 >= questions.length
+                                        ? "View Result"
+                                        : "Next Question"}
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </AnimatePresence>

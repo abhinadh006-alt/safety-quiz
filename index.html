@@ -4,25 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <title>Safety Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
   <div id="root"></div>
 
-  <!-- LOCAL DEV LOGIN BUTTON -->
-  <button onclick="devLogin()"
-    style="position:fixed;right:20px;bottom:20px;padding:10px 14px;background:#ff7f50;color:#fff;border-radius:8px;border:none">
-    DEV LOGIN
-  </button>
-
-  <script>
-    async function devLogin() {
-      const res = await fetch("/api/dev-login", { method: "POST" });
-      if (!res.ok) return alert("Dev login error");
-      window.location.href = "/app";
-    }
-  </script>
-
+  <!-- React entry -->
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

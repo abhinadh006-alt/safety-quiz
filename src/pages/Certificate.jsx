@@ -1,150 +1,92 @@
 // src/pages/Certificate.jsx
-import React, { useEffect, useState, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-
-/**
- * Certificate page
- *
- * - Accepts ?id=<result_id> OR ?score=<n>&total=<m>&username=<name>
- * - Tries to fetch /api/result?id=... (server endpoint) if id provided.
- * - Provides print/export button (use browser Print -> Save as PDF).
- * - Small, dependency-free confetti animation runs when score >= passThreshold.
- */
-
-function useQuery() {
-    return new URLSearchParams(useLocation().search);
-}
-
-function niceDate(ts) {
-    try {
-        const d = new Date(ts);
-        return d.toLocaleString();
-    } catch (e) {
-        return String(ts);
-    }
-}
-
-function smallConfetti(containerEl, count = 80) {
-    if (!containerEl) return;
-    // create lightweight confetti particles as <span> elements
-    const particles = [];
-    for (let i = 0; i < count; i++) {
-        const el = document.createElement("span");
-        el.className = "confetti-paper";
-        // randomize
-        const size = 6 + Math.floor(Math.random() * 10);
-        el.style.width = `${size}px`;
-        el.style.height = `${size * 1.4}px`;
-        el.style.left = `${Math.random() * 100}%`;
-        el.style.background = [
-            "#FF7A59",
-            "#FFD166",
-            "#4ADE80",
-            "#60A5FA",
-            "#A78BFA",
-            "#FB7185",
-        ][Math.floor(Math.random() * 6)];
-        el.style.opacity = String(0.9 + Math.random() * 0.2);
-        const delay = Math.random() * 0.6;
-        el.style.transition = `transform 1.6s ${delay}s cubic-bezier(.17,.67,.3,1), opacity 1.6s ${delay}s`;
-        containerEl.appendChild(el);
-        particles.push(el);
-
-        // trigger transform in next tick
-        requestAnimationFrame(() => {
-            const tx = -50 + Math.random() * 100; // horizontal drift
-            const ty = 200 + Math.random() * 300; // fall
-            const rz = -720 + Math.random() * 1440; // rotate
-            el.style.transform = `translate(${tx}px, ${ty}px) rotate(${rz}deg)`;
-            el.style.opacity = "0";
-        });
-    }
-
-    // cleanup after animation
-    setTimeout(() => {
-        particles.forEach((p) => p.remove());
-    }, 2600);
-}
+import React from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function Certificate() {
-    const q = useQuery();
+    const [params] = useSearchParams();
     const navigate = useNavigate();
-    const containerRef = useRef(null);
-    const confettiRef = useRef(null);
 
-    const id = q.get("id");
-    const qpScore = q.get("score");
-    const qpTotal = q.get("total");
-    const qpName = q.get("username") || q.get("name");
+    const score = Number(params.get("score"));
+    const total = Number(params.get("total"));
+    const username = params.get("username") || "Guest";
 
-    const [loading, setLoading] = useState(Boolean(id));
-    const [row, setRow] = useState(null);
-    const [error, setError] = useState(null);
-
-    // default pass threshold (you can vary per level)
-    const passThreshold = 60;
-
-    useEffect(() => {
-        async function fetchRow() {
-            if (!id) return setLoading(false);
-            setLoading(true);
-            try {
-                const res = await fetch(`/api/result?id=${encodeURIComponent(id)}`);
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}`);
-                }
-                const json = await res.json();
-                // server may return { row } or raw object
-                const r = json?.row ?? json;
-                setRow(r || null);
-            } catch (err) {
-                console.warn("Certificate fetch failed", err);
-                setError("Could not fetch certificate data (server). Showing fallback.");
-                setRow(null);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchRow();
-    }, [id]);
-
-    // determine data to present (row from server preferred)
-    const username = row?.username || qpName || "Guest";
-    const score = row?.score != null ? Number(row.score) : qpScore ? Number(qpScore) : null;
-    const total = row?.total != null ? Number(row.total) : qpTotal ? Number(qpTotal) : null;
-    const createdAt = row?.created_at || row?.createdAt || (row?.created ? row.created : null);
-
-    const percent = (score != null && total) ? Math.round((score / total) * 100) : null;
-    const passed = percent != null ? percent >= passThreshold : null;
-
-    // confetti when certificate loads and passed
-    useEffect(() => {
-        if (percent != null && passed) {
-            // use container element for confetti anchors
-            const el = confettiRef.current || containerRef.current;
-            smallConfetti(el, 80);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [percent, passed]);
-
-    function onPrint() {
-        window.print();
+    if (!Number.isFinite(score) || !Number.isFinite(total)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow text-center">
+                    <h2 className="text-xl font-bold mb-2">No Score Data Available</h2>
+                    <p className="text-gray-600 mb-4">
+                        This certificate link does not contain result data.
+                    </p>
+                    <button
+                        onClick={() => navigate("/")}
+                        className="px-4 py-2 bg-brand-500 text-white rounded"
+                    >
+                        Back Home
+                    </button>
+                </div>
+            </div>
+        );
     }
 
-    function onCopyLink() {
-        const url = window.location.href;
-        navigator.clipboard?.writeText(url).then(() => {
-            // tiny visual confirmation
-            alert("Certificate link copied to clipboard");
-        }).catch(() => {
-            alert("Copy failed — please select and copy the URL manually.");
-        });
-    }
+    const percentage = Math.round((score / total) * 100);
+    const result = percentage >= 60 ? "PASS" : "FAIL";
 
-    function onHome() {
-        navigate("/");
-    }
+    return (
+        <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-8">
+                <h1 className="text-3xl font-extrabold mb-2 text-center">
+                    Certificate of Completion
+                </h1>
+
+                <p className="text-center text-gray-600 mb-6">
+                    This certifies that
+                </p>
+
+                <p className="text-center text-2xl font-semibold mb-8">
+                    {username}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div className="p-4 bg-gray-50 rounded text-center">
+                        <div className="text-sm text-gray-500">Score</div>
+                        <div className="text-xl font-bold">{score} / {total}</div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 rounded text-center">
+                        <div className="text-sm text-gray-500">Percentage</div>
+                        <div className="text-xl font-bold">{percentage}%</div>
+                    </div>
+
+                    <div className={`p-4 rounded text-center ${result === "PASS" ? "bg-green-50" : "bg-red-50"
+                        }`}>
+                        <div className="text-sm text-gray-500">Result</div>
+                        <div className={`text-xl font-bold ${result === "PASS" ? "text-green-700" : "text-red-700"
+                            }`}>
+                            {result}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-8 flex justify-center gap-4">
+                    <button
+                        onClick={() => navigate("/quiz")}
+                        className="px-4 py-2 border rounded"
+                    >
+                        Take Another Quiz
+                    </button>
+                    <button
+                        onClick={() => navigate("/")}
+                        className="px-4 py-2 border rounded"
+                    >
+                        Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+
 
     return (
         <div ref={containerRef} className="min-h-screen bg-gray-50 p-6">

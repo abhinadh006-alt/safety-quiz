@@ -4,19 +4,21 @@ import jwt from "jsonwebtoken";
 export default async function submitResultHandler(req, res) {
     try {
         // 🔒 STEP 1: AUTH CHECK
+        let username = "guest";
+
         const cookieHeader = req.headers.cookie || "";
         const tokenMatch = cookieHeader.match(/token=([^;]+)/);
 
-        if (!tokenMatch) {
-            return res.status(401).json({ ok: false, error: "Not authenticated" });
+        if (tokenMatch) {
+            try {
+                const payload = jwt.verify(tokenMatch[1], process.env.JWT_SECRET);
+                username = payload.sub || "guest";
+            } catch {
+                // invalid token → fallback to guest
+                username = "guest";
+            }
         }
 
-        let payload;
-        try {
-            payload = jwt.verify(tokenMatch[1], process.env.JWT_SECRET);
-        } catch {
-            return res.status(401).json({ ok: false, error: "Invalid session" });
-        }
 
         // 🔧 STEP 2: READ REQUEST BODY
         const { score = 0, total = 0 } = req.body || {};
@@ -41,7 +43,8 @@ export default async function submitResultHandler(req, res) {
             .from("results")
             .insert([{
                 id,
-                username: payload.sub,   // WhatsApp phone or Telegram ID
+                username,
+                // WhatsApp phone or Telegram ID
                 score: Number(score),
                 total: Number(total)
             }])
@@ -54,7 +57,7 @@ export default async function submitResultHandler(req, res) {
         }
 
         // ✅ SUCCESS
-        return res.json({ ok: true, id: data.id });
+        return res.json({ ok: true, certificateId: data.id });
 
     } catch (err) {
         console.error("Unhandled error /api/submit-result:", err);

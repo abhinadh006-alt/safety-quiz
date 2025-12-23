@@ -1,38 +1,37 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-
 export default function Home() {
-    const { search } = useLocation(); // contains ?access=XXXX
-
     return (
-        <div className="py-12">
-            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
-                <h1 className="text-3xl font-extrabold mb-4">
-                    Welcome to Safety Quiz
+        <section className="bg-gradient-to-b from-slate-50 to-white py-16">
+            <div className="max-w-5xl mx-auto px-6 text-center">
+
+                {/* Headline */}
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+                    Certified Safety Training & Assessment Platform
                 </h1>
 
-                <p className="text-gray-600 mb-6">
-                    Take short quizzes to learn safety best practices and get a
-                    completion certificate.
+                {/* Sub headline */}
+                <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
+                    Industry-aligned safety quizzes designed by
+                    <span className="font-medium text-gray-800"> Safety Crew India</span>,
+                    powered by
+                    <span className="font-medium text-gray-800"> Visa Way Global</span>.
+                    Complete assessments and earn verifiable certificates.
                 </p>
 
-                <div className="flex gap-3">
-                    {/* Preserve daily access token */}
-                    <Link
-                        to={`/quiz/select-category${search}`}
-                        className="px-4 py-2 bg-brand-500 text-white rounded-md shadow hover:shadow-lg transition"
-                    >
-                        Start Quiz
-                    </Link>
-
+                {/* CTA */}
+                <div className="mt-10 flex justify-center gap-4 flex-wrap">
                     <a
-                        href="#"
-                        className="px-4 py-2 border rounded-md hover:bg-gray-50 transition"
+                        href="/quiz/select-category"
+                        className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-lg font-medium shadow-md transition"
                     >
-                        About
+                        Start Safety Assessment
                     </a>
+
+                    <button className="px-6 py-3 border border-gray-300 rounded-lg text-lg text-gray-700 hover:bg-gray-100 transition">
+                        About the Program
+                    </button>
                 </div>
+
             </div>
-        </div>
+        </section>
     );
 }

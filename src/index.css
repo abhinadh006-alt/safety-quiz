@@ -13,3 +13,9 @@ body,
 body {
   background-color: #f8fafc;
 }
+
+@media print {
+  button {
+    display: none !important;
+  }
+}

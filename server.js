@@ -5,12 +5,9 @@ import cors from "cors";
 import fetch from "node-fetch";
 import jwt from "jsonwebtoken";
 
-import accessRouter from "./api/access.js";
-import { requireDailyAccess } from "./middleware/requireDailyAccess.js";
-import { getTodayToken } from "./utils/dailyToken.js";
-
 import questionsHandler from "./api/questions.js";
 import submitResultRouter from "./api/submit-result.js";
+import getResultHandler from "./api/result.js";
 
 dotenv.config();
 
@@ -21,7 +18,7 @@ const PORT = process.env.PORT || 3100;
 app.use(
     cors({
         origin: "http://localhost:5174",
-        credentials: true
+        credentials: true,
     })
 );
 
@@ -30,10 +27,9 @@ app.use(bodyParser.json());
 /* ---------- HEALTH ---------- */
 app.get("/", (_, res) => res.send("Backend Running"));
 
-/* ---------- DAILY ACCESS ROUTER ---------- */
-app.use(accessRouter);
+app.get("/api/result", getResultHandler);
 
-/* ---------- DEV LOGIN (OPTIONAL / INTERNAL) ---------- */
+/* ---------- DEV LOGIN (OPTIONAL) ---------- */
 app.post("/api/dev-login", (req, res) => {
     const token = jwt.sign(
         { sub: "dev_user", role: "dev" },
@@ -49,8 +45,8 @@ app.post("/api/dev-login", (req, res) => {
     res.json({ ok: true });
 });
 
-/* ---------- CATEGORIES (DAILY LINK REQUIRED) ---------- */
-app.get("/api/categories", requireDailyAccess, async (req, res) => {
+/* ---------- CATEGORIES (OPEN) ---------- */
+app.get("/api/categories", async (req, res) => {
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
 
     const resp = await fetch(
@@ -58,8 +54,8 @@ app.get("/api/categories", requireDailyAccess, async (req, res) => {
         {
             headers: {
                 apikey: SUPABASE_SERVICE_KEY,
-                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`
-            }
+                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+            },
         }
     );
 
@@ -67,8 +63,8 @@ app.get("/api/categories", requireDailyAccess, async (req, res) => {
     res.json({ ok: true, categories: data });
 });
 
-/* ---------- LEVELS (DAILY LINK REQUIRED) ---------- */
-app.get("/api/levels", requireDailyAccess, async (req, res) => {
+/* ---------- LEVELS (OPEN) ---------- */
+app.get("/api/levels", async (req, res) => {
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
 
     const resp = await fetch(
@@ -76,8 +72,8 @@ app.get("/api/levels", requireDailyAccess, async (req, res) => {
         {
             headers: {
                 apikey: SUPABASE_SERVICE_KEY,
-                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`
-            }
+                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+            },
         }
     );
 
@@ -85,36 +81,13 @@ app.get("/api/levels", requireDailyAccess, async (req, res) => {
     res.json({ ok: true, levels: data });
 });
 
-/* ---------- QUESTIONS (DAILY LINK REQUIRED) ---------- */
-app.get("/api/questions", requireDailyAccess, questionsHandler);
+/* ---------- QUESTIONS ---------- */
+app.get("/api/questions", questionsHandler);
 
-/* ---------- SUBMIT RESULT (DAILY LINK REQUIRED) ---------- */
+/* ---------- SUBMIT RESULT ---------- */
 if (submitResultRouter) {
-    app.use(requireDailyAccess, submitResultRouter);
+    app.use(submitResultRouter);
 }
-
-/* ---------- TODAY'S WHATSAPP LINK ---------- */
-app.get("/api/today-link", (req, res) => {
-    const token = getTodayToken();
-    const link = `${process.env.APP_URL}/?access=${token}`;
-
-    const message = `
-🛡️ Safety Quiz – Today
-
-Click the link below to start today’s quiz.
-⏳ Valid only for today.
-
-👇👇👇
-${link}
-`.trim();
-
-    res.json({
-        ok: true,
-        date: new Date().toISOString().slice(0, 10),
-        link,
-        message
-    });
-});
 
 /* ---------- START SERVER ---------- */
 app.listen(PORT, () =>
