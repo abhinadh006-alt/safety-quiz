@@ -6,10 +6,11 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    const { category_id, level_number, limit = 100, shuffle = "0" } = req.query;
+    const { category_id, level_number, limit = 100, shuffle = 0 } = req.query;
 
     if (!category_id || !level_number) {
         return res.status(400).json({
+            ok: false,
             error: "category_id and level_number are required",
         });
     }
@@ -32,11 +33,18 @@ export default async function handler(req, res) {
         .from("questions")
         .select("*")
         .eq("category_id", category_id)
-        .eq("level_id", level.id)
+        .in(
+            "level_id",
+            supabase
+                .from("levels")
+                .select("id")
+                .eq("category_id", category_id)
+                .eq("level_number", level_number)
+        )
         .limit(Number(limit));
 
-    if (shuffle === "1") {
-        query = query.order("id", { ascending: false });
+    if (Number(shuffle) === 1) {
+        query = query.order("random()");
     }
 
     const { data, error } = await query;
