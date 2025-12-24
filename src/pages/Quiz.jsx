@@ -39,7 +39,7 @@ export default function Quiz() {
         const q = new URLSearchParams(location.search);
         return {
             category_id: q.get('category_id'),
-            level_id: q.get('level_id')
+            level_id: q.get('level_id') || q.get('level_number')
         };
     }
 
