@@ -37,9 +37,10 @@ export default function Quiz() {
     // read query params (category_id and level_id) to fetch filtered questions
     function getQsParams() {
         const q = new URLSearchParams(location.search);
+
         return {
-            category_id: q.get('category_id'),
-            level_id: q.get('level_id') || q.get('level_number')
+            category_id: Number(q.get("category_id")),
+            level_number: Number(q.get("level_number")),
         };
     }
 
@@ -125,7 +126,7 @@ export default function Quiz() {
             setRevealed(false);
 
             try {
-                const { category_id, level_id } = getQsParams();
+                const { category_id, level_number } = getQsParams();
 
                 // call server endpoint with query params if available
                 const qparams = new URLSearchParams();
@@ -133,7 +134,7 @@ export default function Quiz() {
                 qparams.set('limit', '100');
                 qparams.set('shuffle', '1');
                 if (category_id) qparams.set('category_id', category_id);
-                if (level_id) qparams.set('level_id', level_id);
+                if (level_number) qparams.set('level_number', level_number);
 
                 const url = `/api/questions?${qparams.toString()}`;
 

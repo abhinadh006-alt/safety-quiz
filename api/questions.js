@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -6,23 +6,37 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    const { category_id, level_id, limit = 100, shuffle = '0' } = req.query;
+    const { category_id, level_number, limit = 100, shuffle = "0" } = req.query;
 
-    if (!category_id || !level_id) {
+    if (!category_id || !level_number) {
         return res.status(400).json({
-            error: 'category_id and level_id are required'
+            error: "category_id and level_number are required",
+        });
+    }
+
+    // 🔑 Resolve level_id from level_number
+    const { data: level, error: levelError } = await supabase
+        .from("levels")
+        .select("id")
+        .eq("category_id", category_id)
+        .eq("level_number", level_number)
+        .single();
+
+    if (levelError || !level) {
+        return res.status(404).json({
+            error: "Level not found for category",
         });
     }
 
     let query = supabase
-        .from('questions')
-        .select('*')
-        .eq('category_id', category_id)
-        .eq('level_id', level_id)
+        .from("questions")
+        .select("*")
+        .eq("category_id", category_id)
+        .eq("level_id", level.id)
         .limit(Number(limit));
 
-    if (shuffle === '1') {
-        query = query.order('id', { ascending: false }); // simple shuffle
+    if (shuffle === "1") {
+        query = query.order("id", { ascending: false });
     }
 
     const { data, error } = await query;
