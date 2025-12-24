@@ -1,4 +1,4 @@
-// api/levels.js
+// server/api/levels.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -12,27 +12,25 @@ export default async function handler(req, res) {
 
         if (!category_id) {
             return res.status(400).json({
-                ok: false,
                 error: "category_id is required"
             });
         }
 
-        const { data: level, error: levelError } = await supabase
+        const { data, error } = await supabase
             .from("levels")
-            .select("id")
-            .eq("category_id", category_id)
-            .eq("level_number", level_number)
-            .single();
+            .select("id, name")
+            .eq("category_id", Number(category_id))
+            .order("id", { ascending: true });
 
-        if (levelError || !level) {
-            return res.json({ ok: true, questions: [] });
-        }
+        if (error) throw error;
+
+        // ✅ Return array directly (same pattern as categories)
+        return res.status(200).json(data);
 
     } catch (err) {
         console.error("levels api error:", err);
         return res.status(500).json({
-            ok: false,
-            error: err.message
+            error: err.message || "Server error"
         });
     }
 }
