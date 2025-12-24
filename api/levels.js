@@ -17,19 +17,17 @@ export default async function handler(req, res) {
             });
         }
 
-        const { data, error } = await supabase
+        const { data: level, error: levelError } = await supabase
             .from("levels")
-            .select("id, name, level_number")
+            .select("id")
             .eq("category_id", category_id)
-            .order("level_number", { ascending: true });
+            .eq("level_number", level_number)
+            .single();
 
+        if (levelError || !level) {
+            return res.json({ ok: true, questions: [] });
+        }
 
-        if (error) throw error;
-
-        return res.json({
-            ok: true,
-            levels: data
-        });
     } catch (err) {
         console.error("levels api error:", err);
         return res.status(500).json({
