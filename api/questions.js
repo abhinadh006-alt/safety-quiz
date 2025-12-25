@@ -22,18 +22,20 @@ export default async function handler(req, res) {
         );
 
         /* 🔹 STEP 1: Convert level_number → level_id (UNCHANGED) */
-        const { data: level, error: levelError } = await supabase
+        const { data: levels, error: levelError } = await supabase
             .from("levels")
             .select("id")
             .eq("category_id", category_id)
             .eq("level_number", level_number)
-            .single();
+            .limit(1);
 
-        if (levelError || !level) {
+        if (levelError || !levels || levels.length === 0) {
             return res.status(404).json({
                 error: "Invalid level_number for this category"
             });
         }
+
+        const level = levels[0];
 
         /* 🔹 STEP 2: Fetch questions (MINIMAL CHANGE HERE) */
         let query = supabase
