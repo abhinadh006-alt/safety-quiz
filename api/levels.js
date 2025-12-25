@@ -3,20 +3,17 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
+    process.env.SUPABASE_ANON_KEY   // ✅ FIXED
 );
 
 export default async function handler(req, res) {
+    const { category_id } = req.query;
+
+    if (!category_id) {
+        return res.status(400).json({ error: "category_id required" });
+    }
+
     try {
-        const { category_id } = req.query;
-
-        if (!category_id) {
-            return res.status(400).json({
-                ok: false,
-                error: "category_id required",
-            });
-        }
-
         const { data, error } = await supabase
             .from("levels")
             .select("id, name, level_number")
@@ -24,16 +21,9 @@ export default async function handler(req, res) {
             .order("level_number", { ascending: true });
 
         if (error) throw error;
-
-        return res.status(200).json({
-            ok: true,
-            levels: data || [],
-        });
+        res.status(200).json(data);
     } catch (err) {
         console.error("levels api error:", err);
-        return res.status(500).json({
-            ok: false,
-            error: err.message,
-        });
+        res.status(500).json({ error: err.message });
     }
 }
