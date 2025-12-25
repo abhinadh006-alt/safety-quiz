@@ -1,9 +1,8 @@
-// api/questions.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY   // ✅ FIXED
+    process.env.SUPABASE_SERVICE_KEY
 );
 
 export default async function handler(req, res) {
@@ -17,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1️⃣ Resolve level_id
+        // 1️⃣ Resolve level_id from level_number
         const { data: level, error: levelError } = await supabase
             .from("levels")
             .select("id")
@@ -25,11 +24,11 @@ export default async function handler(req, res) {
             .eq("level_number", level_number)
             .single();
 
-        if (!level || levelError) {
+        if (levelError || !level) {
             return res.status(200).json([]);
         }
 
-        // 2️⃣ Fetch questions
+        // 2️⃣ Fetch questions using resolved level_id
         let query = supabase
             .from("questions")
             .select("*")
@@ -42,11 +41,17 @@ export default async function handler(req, res) {
         }
 
         const { data, error } = await query;
-        if (error) throw error;
+
+        if (error) {
+            throw error;
+        }
 
         return res.status(200).json(data);
     } catch (err) {
         console.error("questions api error:", err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({
+            ok: false,
+            error: err.message,
+        });
     }
 }
