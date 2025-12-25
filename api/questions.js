@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    const { category_id, level_number, limit = 100, shuffle = 0 } = req.query;
+    const { category_id, level_number, limit = 100, shuffle } = req.query;
 
     if (!category_id || !level_number) {
         return res.status(400).json({
@@ -15,46 +15,43 @@ export default async function handler(req, res) {
         });
     }
 
+    try {
+        // 1️⃣ Resolve level_id from level_number
+        const { data: level, error: levelError } = await supabase
+            .from("levels")
+            .select("id")
+            .eq("category_id", category_id)
+            .eq("level_number", level_number)
+            .single();
 
-    // 🔑 Resolve level_id from level_number
-    const { data: level, error: levelError } = await supabase
-        .from("levels")
-        .select("id")
-        .eq("category_id", category_id)
-        .eq("level_number", level_number)
-        .single();
+        if (levelError || !level) {
+            return res.status(200).json([]);
+        }
 
-    if (levelError || !level) {
-        return res.status(404).json({
-            error: "Level not found for category",
+        // 2️⃣ Fetch questions using resolved level_id
+        let query = supabase
+            .from("questions")
+            .select("*")
+            .eq("category_id", category_id)
+            .eq("level_id", level.id)
+            .limit(Number(limit));
+
+        if (Number(shuffle) === 1) {
+            query = query.order("random()");
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            throw error;
+        }
+
+        return res.status(200).json(data);
+    } catch (err) {
+        console.error("questions api error:", err);
+        return res.status(500).json({
+            ok: false,
+            error: err.message,
         });
     }
-
-    let query = supabase
-        .from("questions")
-        .select("*")
-        .eq("category_id", category_id)
-        .in(
-            "level_id",
-            supabase
-                .from("levels")
-                .select("id")
-                .eq("category_id", category_id)
-                .eq("level_number", level_number)
-        )
-        .limit(Number(limit));
-
-
-    if (Number(shuffle) === 1) {
-        query = query.order("random()");
-    }
-
-
-    const { data, error } = await query;
-
-    if (error) {
-        return res.status(500).json({ error: error.message });
-    }
-
-    res.status(200).json(data);
 }
