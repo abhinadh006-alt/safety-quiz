@@ -21,7 +21,7 @@ export default async function handler(req, res) {
             process.env.SUPABASE_SERVICE_KEY
         );
 
-        /* 🔹 STEP 1: Convert level_number → level_id */
+        /* 🔹 STEP 1: Convert level_number → level_id (UNCHANGED) */
         const { data: level, error: levelError } = await supabase
             .from("levels")
             .select("id")
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
             });
         }
 
-        /* 🔹 STEP 2: Fetch questions using level_id */
+        /* 🔹 STEP 2: Fetch questions (MINIMAL CHANGE HERE) */
         let query = supabase
             .from("questions")
             .select("*")
@@ -43,14 +43,23 @@ export default async function handler(req, res) {
             .eq("level_id", level.id)
             .limit(Number(limit));
 
+        // ✅ CHANGE 1: DB-level shuffle (only when requested)
+        if (shuffle === "1") {
+            query = query.order("random()");
+        }
+
         const { data: questions, error } = await query;
 
         if (error) throw error;
 
-        /* 🔹 STEP 3: Optional shuffle */
-        if (shuffle === "1") {
-            questions.sort(() => Math.random() - 0.5);
-        }
+        // ❌ REMOVED: JS shuffle (CPU-heavy)
+        // questions.sort(() => Math.random() - 0.5);
+
+        // ✅ CHANGE 2: Cache for WhatsApp traffic (SAFE)
+        res.setHeader(
+            "Cache-Control",
+            "s-maxage=300, stale-while-revalidate=600"
+        );
 
         res.status(200).json({
             ok: true,
