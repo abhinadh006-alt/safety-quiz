@@ -21,53 +21,37 @@ export default async function handler(req, res) {
             process.env.SUPABASE_SERVICE_KEY
         );
 
-        /* 🔹 STEP 1: Convert level_number → level_id (UNCHANGED) */
-        const { data: levels, error: levelError } = await supabase
+        // STEP 1: level_number → level_id
+        const { data: level, error: levelError } = await supabase
             .from("levels")
             .select("id")
             .eq("category_id", category_id)
             .eq("level_number", level_number)
-            .limit(1);
+            .single();
 
-        if (levelError || !levels || levels.length === 0) {
+        if (levelError || !level) {
             return res.status(404).json({
                 error: "Invalid level_number for this category"
             });
         }
 
-        const level = levels[0];
-
-        /* 🔹 STEP 2: Fetch questions (MINIMAL CHANGE HERE) */
-        let query = supabase
+        // STEP 2: fetch questions
+        const { data: questions, error } = await supabase
             .from("questions")
             .select("*")
             .eq("category_id", category_id)
             .eq("level_id", level.id)
             .limit(Number(limit));
 
-        // ✅ CHANGE 1: DB-level shuffle (only when requested)
-        if (shuffle === "1") {
-            query = query.order("random()");
-        }
-
-        const { data: questions, error } = await query;
-
         if (error) throw error;
 
-        // ❌ REMOVED: JS shuffle (CPU-heavy)
-        // questions.sort(() => Math.random() - 0.5);
+        // STEP 3: optional shuffle (JS-side ONLY)
+        if (shuffle === "1") {
+            questions.sort(() => Math.random() - 0.5);
+        }
 
-        // ✅ CHANGE 2: Cache for WhatsApp traffic (SAFE)
-        res.setHeader(
-            "Cache-Control",
-            "s-maxage=300, stale-while-revalidate=600"
-        );
-
-        res.status(200).json({
-            ok: true,
-            count: questions.length,
-            questions
-        });
+        // ✅ STEP 4: return ARRAY ONLY
+        res.status(200).json(questions);
 
     } catch (err) {
         console.error("Questions API error:", err);
