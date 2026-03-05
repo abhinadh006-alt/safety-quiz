@@ -26,42 +26,34 @@ export default function Header() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 mt-2">
 
-                        {/* Powered By */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">Powered by</span>
-                            <img
-                                src={visaWayLogo}
-                                alt="Visa Way Global"
-                                className="h-16 w-auto opacity-90"
-                            />
-                        </div>
+                        {/* Powered by */}
+                        <span className="text-sm text-gray-400">Powered by</span>
+                        <img
+                            src={visaWayLogo}
+                            alt="Visa Way Global"
+                            className="h-8 w-auto opacity-90"
+                        />
 
-                        {/* WhatsApp */}
+                        {/* WhatsApp Button */}
                         <a
-                            href="https://wa.me/YOURNUMBER"
+                            href="https://whatsapp.com/channel/0029Vb6E8OM6xCSGHKPkQK40"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 text-white"
-                            title="Join WhatsApp"
+                            className="px-3 py-1 text-xs font-medium text-white bg-green-500 rounded-md hover:bg-green-600 transition"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M13.601 2.326A7.854 7.854 0 0 0 8.04 0C3.61 0 .02 3.59.02 8.02c0 1.41.37 2.79 1.07 4.01L0 16l4.11-1.08a8.02 8.02 0 0 0 3.93 1c4.43 0 8.02-3.59 8.02-8.02a7.96 7.96 0 0 0-2.46-5.574z" />
-                            </svg>
+                            🟢WhatsApp
                         </a>
 
-                        {/* Instagram */}
+                        {/* Website Button */}
                         <a
-                            href="https://instagram.com/YOURPAGE"
+                            href="https://safetycrewindia.com/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center w-9 h-9 rounded-full bg-pink-500 hover:bg-pink-600 text-white"
-                            title="Follow Instagram"
+                            className="px-3 py-1 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8 0C5.8 0 5.55.01 4.67.05 3.79.09 3.19.23 2.67.42a4.92 4.92 0 0 0-1.78 1.16A4.92 4.92 0 0 0 .42 3.36c-.19.52-.33 1.12-.37 2C.01 6.24 0 6.49 0 8s.01 1.76.05 2.64c.04.88.18 1.48.37 2a4.92 4.92 0 0 0 1.16 1.78 4.92 4.92 0 0 0 1.78 1.16c.52.19 1.12.33 2 .37.88.04 1.13.05 2.64.05s1.76-.01 2.64-.05c.88-.04 1.48-.18 2-.37a4.92 4.92 0 0 0 1.78-1.16 4.92 4.92 0 0 0 1.16-1.78c.19-.52.33-1.12.37-2 .04-.88.05-1.13.05-2.64s-.01-1.76-.05-2.64c-.04-.88-.18-1.48-.37-2a4.92 4.92 0 0 0-1.16-1.78A4.92 4.92 0 0 0 13.33.42c-.52-.19-1.12-.33-2-.37C9.76.01 9.51 0 8 0z" />
-                            </svg>
+                            🌐Website
                         </a>
 
                     </div>
