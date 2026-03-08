@@ -43,7 +43,7 @@ export default function Header() {
                             rel="noopener noreferrer"
                             className="px-3 py-1 text-xs font-medium text-white bg-green-500 rounded-md hover:bg-green-600 transition"
                         >
-                            🟢WhatsApp Channel
+                            WhatsApp Channel
                         </a>
 
                         {/* Website Button */}
